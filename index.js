@@ -80,7 +80,6 @@ function BleControllerFactory() {
   // function into the main UI in Zhivago, so this function re-scans and looks
   // for a matching address.
   // This should happen nearly instantly, at least it does in the test environment
-  // TODO: Maybe create a shim class in Zhivago instead?
 
   this.peripheral = undefined;
   this.isReady = false;
@@ -100,7 +99,7 @@ function BleControllerFactory() {
               reject(err);
             } else {
               this.isReady = true;
-              console.log("Connection successful, maybe");
+              console.log("Connection successful");
             }
           });
           
