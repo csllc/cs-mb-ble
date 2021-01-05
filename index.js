@@ -12,7 +12,7 @@
 // this is a workaround as suggested by https://github.com/sandeepmistry/noble/issues/570
 var ble;
 try { 
-  ble = require('noble'); 
+  ble = require('@abandonware/noble'); 
 } 
 catch(err) 
 { 
@@ -72,6 +72,85 @@ function BleControllerFactory() {
   this.installed = function() {
     return 'function' === typeof( ble.startScanning );
   };
+
+
+  // Interface compatible with other MB/CAN modules used in Zhivago
+
+  // We can't seem to pass the Peripheral object through from the port refresh
+  // function into the main UI in Zhivago, so this function re-scans and looks
+  // for a matching address.
+  // This should happen nearly instantly, at least it does in the test environment
+  // TODO: Maybe create a shim class in Zhivago instead?
+
+  this.peripheral = undefined;
+  this.isReady = false;
+
+  this.open = function(address) {
+    return new Promise((resolve, reject) => {
+
+      let onDiscover = function(peripheral) {
+        if (peripheral.address === address) {
+          this.peripheral = peripheral
+          
+          this.stopScanning();
+          console.log("Found peripheral matching address", this.peripheral.address);
+          // Connect to device
+          this.peripheral.connect( (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              this.isReady = true;
+              console.log("Connection successful, maybe");
+            }
+          });
+          
+          // Remove listeners
+          this.off('discover', onDiscover);
+          // Done
+          resolve(); // TODO: Does it make sense to return peripheral here?
+        }
+      }
+
+      // Temporarily create listener
+      this.on('discover', onDiscover);
+      
+      // TODO: Create timeout for finding device
+
+      // Find peripheral object, again, and make sure it matches
+      // the supplied address
+      this.startScanning();
+      
+    });
+  }
+
+  this.close = function() {
+    return this.peripheral.disconnect()
+    .then(() => {
+      // Close stream
+      this.emit('close'); // TODO: Is this supported/expected for this module?
+      resolve();
+    })
+    .then(() => {
+      this.peripheral = undefined;
+      me.isReady = false;
+      me.push(null);
+    })
+    .catch((err) => {
+      throw err;
+    });
+  }
+
+  this.write = function(msg) {
+    return new Promise((resolve, reject) => {
+      console.log("write", msg);
+      resolve();
+
+    });
+  }
+
+  this.isOpen = function() {
+    return this.peripheral && this.isReady;
+  }
 
   // Make constructor available in the exported object
   factory.Controller = Controller;

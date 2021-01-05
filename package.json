@@ -9,6 +9,7 @@
   "author": "Bill Glase <bglase@controls.com> (http://wwww.controls.com/)",
   "license": "MIT",
   "dependencies": {
+    "@abandonware/noble": "^1.9.2-10",
     "noble": "^1.8.0",
     "underscore": "^1.8.3"
   },
